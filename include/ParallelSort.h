@@ -9,7 +9,7 @@
 template<typename T>
 void Sorter<T>::parallelQuickSort(std::vector<T>& arr, int numThreads) {
     // Для маленьких массивов используем обычную сортировку
-    if (arr.size() < 10000) {
+    if (arr.size() < 10000 || numThreads <= 1) {
         quickSort(arr);
         return;
     }
@@ -21,10 +21,17 @@ void Sorter<T>::parallelQuickSort(std::vector<T>& arr, int numThreads) {
     std::vector<T> left(arr.begin(), arr.begin() + mid);
     std::vector<T> right(arr.begin() + mid, arr.end());
 
+    // Распределяем потоки между левой и правой частью
+    // Например: если всего 4 потока, то левая получает 2, правая получает 2
+    int leftThreads = numThreads / 2;
+    int rightThreads = numThreads - leftThreads;
+
     // Создаем потоки для параллельной сортировки
     std::vector<std::thread> threads;
-    threads.emplace_back([&]() { quickSort(left); });   // Сортируем левую часть
-    threads.emplace_back([&]() { quickSort(right); });  // Сортируем правую часть
+    // Запускаем рекурсивную параллельную сортировку для левой части
+    threads.emplace_back([&]() {parallelQuickSort(left, leftThreads); });
+    // Запускаем рекурсивную параллельную сортировку для правой части
+    threads.emplace_back([&]() {parallelQuickSort(right, rightThreads); });
 
     // Ждем завершения обоих потоков
     for (auto& t : threads) {
